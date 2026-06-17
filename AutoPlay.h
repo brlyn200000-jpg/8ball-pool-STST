@@ -73,6 +73,13 @@ inline Point2D PredictBallTrajectory(Point2D initialPos, Point2D velocity, doubl
 }
 
 /**
+ * Helper: Extract spin magnitude from Vec2d spin vector
+ */
+inline double ExtractSpinMagnitude(const Point2D& spinVector) {
+    return sqrt(spinVector.x * spinVector.x + spinVector.y * spinVector.y);
+}
+
+/**
  * Premium scoring function: Evaluates shot quality across multiple dimensions
  * Returns a composite score incorporating distance, angle precision, and collision dynamics
  */
@@ -288,6 +295,7 @@ namespace AutoPlay {
 
         Ball::Classification myclass = sharedGameManager.getPlayerClassification();
         uint nominatedPocket = sharedGameManager.getNominatedPocket();
+        double spinMagnitude = ExtractSpinMagnitude(sharedGameManager.getShotSpin());
         
         int steps = 0;
         bool foundShot = false;
@@ -335,7 +343,7 @@ namespace AutoPlay {
                         sqrt(power),
                         1.0,
                         0.0,
-                        sharedGameManager.getShotSpin(),
+                        spinMagnitude,
                         true,
                         gPrediction->guiData.ballsCount - 1
                     );
@@ -373,7 +381,7 @@ namespace AutoPlay {
                         sqrt(power),
                         1.0,
                         0.0,
-                        sharedGameManager.getShotSpin(),
+                        spinMagnitude,
                         true,
                         gPrediction->guiData.ballsCount - 1
                     );
@@ -526,6 +534,7 @@ namespace AutoPlay {
         std::vector<Candidate> candidates;
         auto pockets = getPockets();
         auto& cueBall = gPrediction->guiData.balls[0];
+        double spinMagnitude = ExtractSpinMagnitude(sharedGameManager.getShotSpin());
         
         bool bFoundLowestNumberedBall = false;
         int iFoundLowestNumberedBall = -1;
@@ -558,7 +567,7 @@ namespace AutoPlay {
                 if (angle < 0) angle += 2 * M_PI;
                 
                 // REVOLUTIONARY PHYSICS: Advanced power calculation
-                double power = CalculateOptimalPowerAdvanced(distCueToTarget + distTargetToPocket, 0.0, 1.0);
+                double power = CalculateOptimalPowerAdvanced(distCueToTarget + distTargetToPocket, spinMagnitude, 1.0);
                 double compositeScore = distCueToTarget + distTargetToPocket;
                 
                 if (power > 666.0) power = 666.0;
@@ -568,8 +577,8 @@ namespace AutoPlay {
         
         // EXPLOSIVE RANKING: Sort with advanced physics-based scoring
         std::sort(candidates.begin(), candidates.end(), [&](const Candidate& a, const Candidate& b) {
-            double scoreA = RankCandidate(a, a.power, true, ballsRemaining, sharedGameManager.getShotSpin());
-            double scoreB = RankCandidate(b, b.power, true, ballsRemaining, sharedGameManager.getShotSpin());
+            double scoreA = RankCandidate(a, a.power, true, ballsRemaining, spinMagnitude);
+            double scoreB = RankCandidate(b, b.power, true, ballsRemaining, spinMagnitude);
             return scoreA > scoreB;  // Descending order (best first)
         });
         
